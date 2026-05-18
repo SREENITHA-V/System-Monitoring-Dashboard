@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Monitoring Dashboard</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>System Monitoring Dashboard</h1>
+
+        <div class="cards">
+
+            <div class="card">
+                <h2>CPU Usage</h2>
+                <p id="cpu">0%</p>
+            </div>
+
+            <div class="card">
+                <h2>RAM Usage</h2>
+                <p id="ram">0%</p>
+            </div>
+
+            <div class="card">
+                <h2>Disk Usage</h2>
+                <p id="disk">0%</p>
+            </div>
+
+        </div>
+
+        <div class="chart-container">
+            <canvas id="cpuChart"></canvas>
+        </div>
+
+    </div>
+
+<script>
+
+const cpuData = {
+    labels: [],
+    datasets: [{
+        label: 'CPU Usage %',
+        data: [],
+        borderWidth: 2,
+        tension: 0.3
+    }]
+};
+
+const config = {
+    type: 'line',
+    data: cpuData,
+    options: {
+        responsive: true,
+        scales: {
+            y: {
+                min: 0,
+                max: 100
+            }
+        }
+    }
+};
+
+const cpuChart = new Chart(
+    document.getElementById('cpuChart'),
+    config
+);
+
+async function fetchStats() {
+
+    const response = await fetch('/stats');
+    const data = await response.json();
+
+    document.getElementById('cpu').innerText = data.cpu + "%";
+    document.getElementById('ram').innerText =
+        data.ram_percent + "% (" + data.ram_used + "GB / " + data.ram_total + "GB)";
+
+    document.getElementById('disk').innerText =
+        data.disk_percent + "% (" + data.disk_used + "GB / " + data.disk_total + "GB)";
+
+    // Update chart
+    cpuData.labels.push(data.time);
+    cpuData.datasets[0].data.push(data.cpu);
+
+    if (cpuData.labels.length > 10) {
+        cpuData.labels.shift();
+        cpuData.datasets[0].data.shift();
+    }
+
+    cpuChart.update();
+}
+
+setInterval(fetchStats, 2000);
+
+fetchStats();
+
+</script>
+
+</body>
+</html>
